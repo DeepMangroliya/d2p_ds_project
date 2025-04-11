@@ -1,20 +1,24 @@
-"""March 23rd, 2025 - March 28th, 2025"""
-
+import io
+import os
 from typing import Optional, Tuple
 
+import boto3
 import mysql.connector
 import pandas as pd
+from botocore.client import BaseClient
+from botocore.exceptions import BotoCoreError, ClientError
 from mysql.connector import Error, MySQLConnection
 from mysql.connector.cursor import MySQLCursor as Cursor
 
 
+# SQL Database Functions
 def db_connection(host: str,
                   user: str,
                   password: str,
                   database: Optional[str] = None
                  ) -> Tuple[MySQLConnection, str]:
     """
-    Connects to mysql server.
+    Connects to mysql server.re
 
     Args:
         host (str): MySQL Server host
@@ -193,3 +197,85 @@ def insert_data(con: MySQLConnection,
             print(e)
     return total
         
+#Amazon Web Services (AWS)
+
+def auth_aws(aws_access_key: str, 
+             aws_secret_key: str, 
+             region: Optional[str]='us-east-2') -> BaseClient:
+    """
+    Authenticates and returns an S3 client using the provided AWS credentials and region.
+
+    Parameters:
+        aws_access_key (str): AWS access key.
+        aws_secret_key (str): AWS secret key.
+        region (Optional[str]): AWS region (optional).
+
+    Returns:
+        BaseClient: An authenticated Boto3 S3 client.
+
+    Raises:
+        BotoCoreError, ClientError: If authentication or connection fails.
+    """
+    try:
+        s3_client = boto3.client('s3', aws_access_key_id=aws_access_key, aws_secret_access_key=aws_secret_key, region_name=region)
+        return s3_client
+    except (BotoCoreError, ClientError, TypeError) as e:
+        print(e)
+    
+
+def read_file_s3(s3_client: BaseClient, 
+                 bucket: str, 
+                 object_name: str) -> pd.DataFrame:
+    """
+    Reads a file from S3 and loads it into a pandas DataFrame.
+
+    Parameters:
+        s3_client (BaseClient): The S3 client.
+        bucket (str): The S3 bucket name.
+        file_name (str): The name of the file in the bucket.
+
+    Returns:
+        pd.DataFrame: Data loaded from the file in the specified bucket.
+    
+    Raises:
+        ClientError: If there is an issue with the AWS request (e.g., file not found).
+        Exception: For any other unforeseen errors during the file reading or DataFrame creation.
+    """
+    
+    try:
+        s3_object = s3_client.get_object(Bucket=bucket, Key=object_name)
+        body = s3_object['Body'].read()
+        data = io.BytesIO(body)
+        df = pd.read_csv(data)
+    except ClientError as e:
+        print(e)
+    return df
+
+def write_file_s3(s3_client: BaseClient, 
+                  file: str, 
+                  bucket: str, 
+                  object_name: Optional[str]=None) -> None:
+    """
+    Uploads a file to an S3 bucket.
+
+    Parameters:
+        s3_client (BaseClient): The S3 client used to interact with AWS S3.
+        file (str): The local file path to be uploaded.
+        bucket (str): The S3 bucket name where the file will be uploaded.
+        object_name (str): The name of the object in S3 (the file name).
+
+    Returns:
+        None: This function does not return anything. It only uploads the file to S3.
+
+    Raises:
+        ClientError: If there is an issue with the S3 request (e.g., invalid bucket or permission error).
+    """
+    if object_name is None:
+        object_name = os.path.basename(file)
+        
+    try:
+        with open(file, "rb") as file_content:
+            s3_client.put_object(Bucket=bucket, Key=object_name, Body=file_content)
+        print("File uploaded Successfully")
+    except ClientError as e:
+        print(e)

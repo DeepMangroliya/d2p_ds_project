@@ -4,7 +4,7 @@ import os
 from dotenv import load_dotenv
 
 from utils import (create_database, create_table, db_connection,
-                       formatting_columns_placeholders, get_data, insert_data)
+                   formatting_columns_placeholders, get_data, insert_data)
 
 #utilizing argparse module to push the arguments dynamically
 parser = argparse.ArgumentParser(description="Accessing Database test1 for D2P Project") #creating parser
@@ -29,7 +29,6 @@ else:
     schema, placeholder_str = formatting_columns_placeholders(df=df)
     create_table(mycursor=mycursor, database=args.database, table_name=args.table_name, schema=schema)
     insert_data(con=con, mycursor=mycursor, table_name=args.table_name, df=df)
+    
 
-# to execute the script in your terminal
-# python test.py -db "test01"  -> this will run if block
-# python test.py -dbe True -db "test01" -c "sales.csv" -t "sales" -> this will run else block
+
