@@ -21,5 +21,3 @@ write_file_s3(s3_client=client, file="data/inventory_data.csv",
 df = read_file_s3(s3_client=client, 
                   bucket="d2p.testing.bucket", 
                   object_name="inventory.csv")
-
-print(df)

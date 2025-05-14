@@ -10,6 +10,13 @@ from botocore.exceptions import BotoCoreError, ClientError
 from mysql.connector import Error, MySQLConnection
 from mysql.connector.cursor import MySQLCursor as Cursor
 
+import os
+from dotenv import load_dotenv
+from pathlib import Path
+import gspread
+from google.oauth2.service_account import Credentials
+
+load_dotenv(Path('.env'))
 
 # SQL Database Functions
 def db_connection(host: str,
@@ -35,6 +42,8 @@ def db_connection(host: str,
     """
     try:
         #connecting to mysql server
+        con = None
+        mycursor = None
         con = mysql.connector.connect(
             host=host,
             user=user,
@@ -283,3 +292,84 @@ def write_file_s3(s3_client: BaseClient,
         print("File uploaded Successfully")
     except ClientError as e:
         print(e)
+        
+    
+def gcp_authentication() -> Credentials:
+    SCOPES = [
+        "https://spreadsheets.google.com/feeds",
+        'https://www.googleapis.com/auth/spreadsheets',
+        "https://www.googleapis.com/auth/drive.file",
+        "https://www.googleapis.com/auth/drive"
+    ]
+     
+    type = "service_account"
+    project_id = "potent-symbol-456616-g9"
+    private_key_id = os.getenv("PRIVATE_KEY_ID")
+    private_key = os.getenv("PRIVATE_KEY")
+    client_email = os.getenv("CLIENT_EMAIL")
+    client_id = os.getenv("CLIENT_ID")
+    auth_uri = "https://accounts.google.com/o/oauth2/auth"
+    token_uri = "https://oauth2.googleapis.com/token"
+    auth_provider_x509_cert_url = "https://www.googleapis.com/oauth2/v1/certs"
+    client_x509_cert_url = os.getenv("CLIENT_X509_CERT_URL")
+    
+    credentials = Credentials.from_service_account_info({
+        "type": type,
+        "project_id": project_id,
+        "private_key_id": private_key_id,
+        "private_key": private_key,
+        "client_email": client_email,
+        "client_id": client_id,
+        "client_x509_cert_url": client_x509_cert_url,
+        "token_uri": token_uri,
+        "auth_uri": auth_uri,
+        "auth_provider_x509_cert_url": auth_provider_x509_cert_url
+    })
+    
+    return credentials
+    
+def gcp_feed_data(spreadsheet_name: str, worksheet_name: str, df:pd.DataFrame) -> None:
+    credentials = gcp_authentication()
+    gc = gspread.authorize(credentials)
+    
+    sheet = gc.open(spreadsheet_name)
+    
+    try:
+        worksheet = sheet.worksheet(worksheet_name)
+        worksheet.clear()
+    except gspread.exceptions.WorksheetNotFound:
+        worksheet = sheet.add_worksheet(title=worksheet_name, rows=str(len(df) + 1), cols=str(len(df.columns)))
+    
+    data = [df.columns.values.tolist()] + df.values.tolist()
+    
+    worksheet.update(data)
+    
+    print(f"Data written to '{worksheet_name}' in '{spreadsheet_name}' successfully.")
+    
+def run_sql_query_from_file(con: MySQLConnection, mycursor: Cursor, file_path: str) -> Optional[pd.DataFrame]:
+    """
+    Executes SQL query from a .sql file and returns the result as a DataFrame.
+
+    Args:
+        con (MySQLConnection): Connection object to the MySQL server.
+        mycursor (Cursor): Cursor object for executing queries.
+        file_path (str): Path to the .sql file.
+
+    Returns:
+        pd.DataFrame: Query result as DataFrame if successful, otherwise None.
+    """
+    try:
+        with open(file_path, 'r') as f:
+            query = f.read()
+        
+        mycursor.execute(query)
+        rows = mycursor.fetchall()
+        columns = [desc[0] for desc in mycursor.description]
+        df = pd.DataFrame(rows, columns=columns)
+        print(f"Query executed successfully. {len(df)} rows retrieved.")
+        return df
+    except Error as e:
+        print(f"Error executing query from file: {e}")
+    except FileNotFoundError:
+        print(f"Query file not found: {file_path}")
+    return None
