@@ -1,3 +1,4 @@
 # write the "file name" and "file path" you don't want to push on github
 # with this, git automatically ignore what we have on this file
-
+.env
+data/

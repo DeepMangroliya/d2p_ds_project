@@ -1,6 +1,25 @@
-boto3
-botocore
-python-dotenv
-argparse
+# Core dependencies
 pandas
+numpy
+faker
+xgboost
+
+# AWS (S3)
+boto3
+
+# Google Sheets
+gspread
+gspread_dataframe
+google-auth
+
+# MySQL
 mysql-connector-python
+
+# Environment variables
+python-dotenv
+
+# Argument parsing (standard, but for completeness)
+argparse ; python_version < "3.10"
+
+# Optional typing support
+typing-extensions ; python_version < "3.8"

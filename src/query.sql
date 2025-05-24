@@ -1,0 +1,1 @@
+SELECT * FROM processed_db.cdnow;
