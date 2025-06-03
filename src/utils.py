@@ -1,5 +1,6 @@
 import io
 import os
+import importlib
 from pathlib import Path
 from typing import Optional, Tuple
 
@@ -277,7 +278,7 @@ def write_file_s3(df: pd.DataFrame,
     try:
         s3_client = auth_aws()
         csv = df.to_csv(index = False)
-        s3_client.put_object(Bucket=bucket, Key=object_name, Body=csv)
+        s3_client.put_object(Bucket=bucket, Key=object_name, Body=f"{csv}.csv")
         print("File uploaded Successfully")
     except ClientError as e:
         print(e)
@@ -377,3 +378,13 @@ def gcp_feed_data(spreadsheet_id: str,
         return True
     else:
         return False
+
+def process_task(task: str) -> dict:
+    """Import task file to process the data from src/tools folder
+    Args:
+        task (str): name of the task to process
+    Returns:
+        dict: processed_data
+    """
+    lib = importlib.import_module(f"src.{task}")
+    return lib.process()

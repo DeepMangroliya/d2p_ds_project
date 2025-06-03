@@ -3,8 +3,9 @@ from typing import Optional
 
 import pandas as pd
 from dotenv import load_dotenv
+from pathlib import Path
 
-from utils import db_connection, write_file_s3
+from utils import db_connection
 
 load_dotenv(".env")
 
@@ -47,10 +48,8 @@ def process() -> None:
     Returns:
         None
     """
-    file_path = "src/query.sql"
+    file_path = Path("src/query.sql")
     database = "processed_db"
-    s3_bucket = "d2p.testing.bucket"
     
     data = run_sql_query_from_file(file_path=file_path, database=database)
-    
-    write_file_s3(df=data, bucket=s3_bucket, object_name="clv_data.csv")
+    return data

@@ -3,7 +3,7 @@ import pandas as pd
 from faker import Faker
 from xgboost import XGBClassifier, XGBRegressor
 
-from src.utils import gcp_feed_data, read_file_s3
+from src.utils import read_file_s3
 
 fake = Faker()
 
@@ -162,7 +162,7 @@ def process() -> None:
     s3_bucket = "d2p.testing.bucket"
     df = read_file_s3(bucket=s3_bucket, object_name='clv_data.csv')
     results_df = modeling(df)
-    print(results_df)
+    print(results_df.head())
     
     #push the processed data to google sheets
-    gcp_feed_data(spreadsheet_id='1h9V1yHMFfzS-CYz31xN4jzDUoWTaKOrCM2zuIsJykes', worksheet_name='sales', df=results_df)
+    return results_df

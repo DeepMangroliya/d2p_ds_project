@@ -1,0 +1,36 @@
+---
+upload-to-database:
+  import:
+    - import:
+        dirpath: ./data/
+        file_extension: csv 
+        prefix_filename: supermarket_sales
+
+cleaned-upload-to-database:
+  import:
+    - import:
+        dirpath: ./data/
+        file_extension: csv 
+        prefix_filename: table1
+    - import:
+        dirpath: ./data/
+        file_extension: csv 
+        prefix_filename: table2
+    - import:
+        dirpath: ./data/
+        file_extension: csv 
+        prefix_filename: table3
+
+data_analysis_ext:
+  export:
+    - export:
+        host: s3
+        bucket_name: ds-project-demo1
+        object_name: clv_data
+
+modeling:
+  export:
+    - export:
+        host: gsheet
+        spread_sheet_id: 1h9V1yHMFfzS-CYz31xN4jzDUoWTaKOrCM2zuIsJykes
+        worksheet_name: sales
